@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Controle de gastos pessoais — gerencie suas finanças de forma simples e visual.">
+    <title>Finanças — Controle de Gastos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <!-- ═══════════════ SIDEBAR ═══════════════ -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-icon">
+                <i class="fas fa-wallet"></i>
+            </div>
+            <span class="brand-text">Finanças</span>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="#" class="nav-link active" data-view="dashboard" id="nav-dashboard">
+                <i class="fas fa-chart-pie"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="#" class="nav-link" data-view="expenses" id="nav-expenses">
+                <i class="fas fa-receipt"></i>
+                <span>Gastos</span>
+            </a>
+            <a href="#" class="nav-link" data-view="budgets" id="nav-budgets">
+                <i class="fas fa-bullseye"></i>
+                <span>Orçamentos</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <a href="/api/export" class="nav-link" id="nav-export">
+                <i class="fas fa-file-csv"></i>
+                <span>Exportar CSV</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- ═══════════════ MAIN CONTENT ═══════════════ -->
+    <main class="main-content">
+
+        <!-- Mobile Header -->
+        <header class="mobile-header">
+            <button class="menu-toggle" id="menu-toggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <span class="brand-text">Finanças</span>
+        </header>
+
+        <!-- ─── DASHBOARD VIEW ─── -->
+        <section class="view active" id="view-dashboard">
+            <div class="view-header">
+                <div>
+                    <h1>Dashboard</h1>
+                    <p class="view-subtitle">Visão geral das suas finanças</p>
+                </div>
+                <div class="month-selector">
+                    <button class="btn-icon" id="prev-month"><i class="fas fa-chevron-left"></i></button>
+                    <span class="month-label" id="month-label">Outubro 2026</span>
+                    <button class="btn-icon" id="next-month"><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="cards-grid">
+                <div class="summary-card">
+                    <div class="card-icon purple"><i class="fas fa-coins"></i></div>
+                    <div class="card-info">
+                        <span class="card-label">Total do Mês</span>
+                        <span class="card-value" id="total-month">R$ 0,00</span>
+                    </div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-icon teal"><i class="fas fa-list-ol"></i></div>
+                    <div class="card-info">
+                        <span class="card-label">Transações</span>
+                        <span class="card-value" id="total-transactions">0</span>
+                    </div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-icon amber"><i class="fas fa-trophy"></i></div>
+                    <div class="card-info">
+                        <span class="card-label">Maior Categoria</span>
+                        <span class="card-value" id="top-category">—</span>
+                    </div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-icon rose"><i class="fas fa-calendar-day"></i></div>
+                    <div class="card-info">
+                        <span class="card-label">Média Diária</span>
+                        <span class="card-value" id="daily-avg">R$ 0,00</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="charts-row">
+                <div class="chart-card">
+                    <h2 class="chart-title">Gastos por Categoria</h2>
+                    <div class="chart-container chart-doughnut-container">
+                        <canvas id="chart-category"></canvas>
+                        <p class="chart-empty" id="chart-category-empty" style="display:none;">Nenhum gasto registrado neste mês</p>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h2 class="chart-title">Gastos Diários</h2>
+                    <div class="chart-container">
+                        <canvas id="chart-daily"></canvas>
+                        <p class="chart-empty" id="chart-daily-empty" style="display:none;">Nenhum gasto registrado neste mês</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Budget Alerts -->
+            <div class="budget-alerts" id="budget-alerts" style="display:none;">
+                <h2 class="section-title"><i class="fas fa-exclamation-triangle"></i> Alertas de Orçamento</h2>
+                <div class="alerts-list" id="alerts-list"></div>
+            </div>
+        </section>
+
+        <!-- ─── EXPENSES VIEW ─── -->
+        <section class="view" id="view-expenses">
+            <div class="view-header">
+                <div>
+                    <h1>Gastos</h1>
+                    <p class="view-subtitle">Gerencie seus gastos</p>
+                </div>
+                <button class="btn btn-primary" id="btn-add-expense">
+                    <i class="fas fa-plus"></i> Novo Gasto
+                </button>
+            </div>
+
+            <!-- Filters -->
+            <div class="filters-bar">
+                <div class="filter-group">
+                    <label for="filter-category">Categoria</label>
+                    <select id="filter-category" class="input">
+                        <option value="">Todas</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="filter-start">De</label>
+                    <input type="date" id="filter-start" class="input">
+                </div>
+                <div class="filter-group">
+                    <label for="filter-end">Até</label>
+                    <input type="date" id="filter-end" class="input">
+                </div>
+                <button class="btn btn-secondary" id="btn-filter">
+                    <i class="fas fa-search"></i> Filtrar
+                </button>
+                <button class="btn btn-ghost" id="btn-clear-filter">
+                    <i class="fas fa-times"></i> Limpar
+                </button>
+            </div>
+
+            <!-- Expenses Table -->
+            <div class="table-card">
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Categoria</th>
+                                <th>Descrição</th>
+                                <th>Valor</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="expenses-tbody">
+                            <tr>
+                                <td colspan="5" class="table-empty">
+                                    <i class="fas fa-inbox"></i>
+                                    <p>Nenhum gasto encontrado</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ─── BUDGETS VIEW ─── -->
+        <section class="view" id="view-budgets">
+            <div class="view-header">
+                <div>
+                    <h1>Orçamentos</h1>
+                    <p class="view-subtitle">Defina limites mensais por categoria</p>
+                </div>
+            </div>
+
+            <!-- Add Budget Form -->
+            <div class="budget-form-card">
+                <h2 class="section-title">Definir Orçamento</h2>
+                <form class="budget-form" id="budget-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="budget-category">Categoria</label>
+                            <select id="budget-category" class="input" required>
+                                <option value="">Selecione...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="budget-limit">Limite Mensal (R$)</label>
+                            <input type="number" id="budget-limit" class="input" step="0.01" min="0.01" placeholder="0,00" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Salvar
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Budget Cards -->
+            <div class="budgets-grid" id="budgets-grid">
+                <div class="budget-empty">
+                    <i class="fas fa-bullseye"></i>
+                    <p>Nenhum orçamento definido</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ═══════════════ EXPENSE MODAL ═══════════════ -->
+    <div class="modal-overlay" id="expense-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modal-title">Novo Gasto</h2>
+                <button class="btn-icon modal-close" id="modal-close"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="expense-form">
+                <div class="form-group">
+                    <label for="expense-amount">Valor (R$)</label>
+                    <input type="number" id="expense-amount" class="input" step="0.01" min="0.01" placeholder="0,00" required>
+                </div>
+                <div class="form-group">
+                    <label for="expense-category">Categoria</label>
+                    <select id="expense-category" class="input" required>
+                        <option value="">Selecione...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="expense-description">Descrição</label>
+                    <input type="text" id="expense-description" class="input" placeholder="Ex: Almoço no restaurante" maxlength="200">
+                </div>
+                <div class="form-group">
+                    <label for="expense-date">Data</label>
+                    <input type="date" id="expense-date" class="input" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-ghost" id="modal-cancel">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="modal-submit">
+                        <i class="fas fa-check"></i> Salvar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ═══════════════ TOAST ═══════════════ -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Overlay para mobile -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
